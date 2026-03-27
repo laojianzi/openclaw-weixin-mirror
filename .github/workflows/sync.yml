@@ -2,7 +2,7 @@ name: Sync npm package
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 19 * * *'
   workflow_dispatch:
 
 permissions:
@@ -12,10 +12,10 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sync branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: sync
+          ref: main
           fetch-depth: 0 # Need full history to push and tag
 
       - name: Setup Node.js

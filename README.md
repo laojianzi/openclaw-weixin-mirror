@@ -10,5 +10,5 @@ This repository is an unofficial mirror of the npm package [`@tencent-weixin/ope
 
 ## Automation
 
-- **Sync Branch**: All automation logic, including GitHub Actions workflows and Node.js scripts used to synchronize the repository with the npm registry, is located on the `sync` branch.
-- **Process**: Versions are synced automatically via a scheduled GitHub Actions workflow that runs every hour. It downloads the tarball from npm, unpacks it to the `orphan` branch, and generates a release using the GitHub Models API.
+- **Main Branch**: All automation logic, including GitHub Actions workflows and Node.js scripts used to synchronize the repository with the npm registry, is located on the `main` branch.
+- **Process**: Versions are synced automatically via a scheduled GitHub Actions workflow that runs daily at 03:00 (UTC+8). It downloads the tarball from npm, unpacks it to the `orphan` branch, and generates a release using the GitHub Models API.
