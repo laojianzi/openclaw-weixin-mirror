@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@octokit/rest": "^21.0.0",
+    "semver": "^7.6.0"
+  }
+}
