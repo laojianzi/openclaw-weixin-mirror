@@ -1,7 +1,19 @@
 {
   "type": "module",
+  "imports": {
+    "#/*": "./scripts/*"
+  },
+  "scripts": {
+    "sync": "bun run scripts/index.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
   "dependencies": {
-    "@octokit/rest": "^21.0.0",
-    "semver": "^7.6.0"
+    "@octokit/rest": "^22.0.1",
+    "semver": "^7.7.4"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.7.1",
+    "typescript": "^6.0.0"
   }
 }
