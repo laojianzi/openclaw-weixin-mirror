@@ -17,26 +17,38 @@ async function generateChangelog(
 	readmeStr: string,
 ): Promise<string> {
 	const systemPrompt =
-		"You are a professional technical writer. Your task is to generate clean, concise, and accurate release notes in English. You MUST NOT include any conversational filler, introductory remarks, meta-comments, or Markdown code fences (e.g., ```markdown). Your entire response must be the release notes content itself, ready to be used as a GitHub Release body.";
+		"You are a professional technical writer for open-source projects. Your task is to generate high-quality, clean, and concise release notes in English. You MUST follow the provided template structure exactly, using bolded headers with emojis and a version title. No conversational filler, no meta-comments, and no Markdown code fences.";
 
 	const userPrompt = `
-Generate a changelog for version ${version}.
+Generate a changelog for version ${version} based on the provided context.
 Previous version: ${prevVersion || "None (Initial Release)"}
 
-STRUCTURE REQUIREMENTS:
-Use the following sections only if they have content:
-💥 Breaking Changes
-✨ New Features
-🐛 Bug Fixes
-📦 Dependencies
-🔧 Other Changes
+TEMPLATE SPECIFICATION:
+Your response must start with "## Version ${version}" and follow this exact style:
 
-OUTPUT CONSTRAINTS:
-- Do not use code fences.
-- Do not start with "Here is the changelog" or similar.
-- Do not end with "Hope this helps" or similar.
-- Use plain Markdown only.
-- Be concise.
+## Version ${version}
+
+💥 **Breaking Changes**
+- (List breaking changes here, if any)
+
+✨ **New Features**
+- (List new features here)
+
+🐛 **Bug Fixes**
+- (List bug fixes here)
+
+📦 **Dependencies**
+- (List dependency changes here)
+
+🔧 **Other Changes**
+- (List internal improvements, refactorings, or documentation updates here)
+
+STYLE GUIDELINES:
+- Use past tense or descriptive present tense (e.g., "Added support for...", "Improved reliability...", "Refactored module...").
+- Be technically specific (mention headers, status codes, or file names when relevant).
+- Omit any section that has no content.
+- DO NOT use code fences (e.g., \`\`\`markdown).
+- DO NOT add any text before or after the changelog.
 
 CONTEXT:
 README content snippet:
