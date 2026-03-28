@@ -17,20 +17,28 @@ async function generateChangelog(
 	readmeStr: string,
 ): Promise<string> {
 	const systemPrompt =
-		"You are a professional technical writer. Generate concise, accurate release notes in English based on code diffs and README changes.";
+		"You are a professional technical writer. Your task is to generate clean, concise, and accurate release notes in English. You MUST NOT include any conversational filler, introductory remarks, meta-comments, or Markdown code fences (e.g., ```markdown). Your entire response must be the release notes content itself, ready to be used as a GitHub Release body.";
+
 	const userPrompt = `
 Generate a changelog for version ${version}.
 Previous version: ${prevVersion || "None (Initial Release)"}
 
-Please provide structured output with the following sections:
+STRUCTURE REQUIREMENTS:
+Use the following sections only if they have content:
 💥 Breaking Changes
 ✨ New Features
 🐛 Bug Fixes
 📦 Dependencies
 🔧 Other Changes
 
-Omit sections with no content. Output plain Markdown, no code fences.
+OUTPUT CONSTRAINTS:
+- Do not use code fences.
+- Do not start with "Here is the changelog" or similar.
+- Do not end with "Hope this helps" or similar.
+- Use plain Markdown only.
+- Be concise.
 
+CONTEXT:
 README content snippet:
 ${readmeStr}
 
@@ -55,7 +63,17 @@ ${diffStr}
 				maxBuffer: 10 * 1024 * 1024,
 			},
 		);
-		return output.trim();
+
+		let content = output.trim();
+
+		// Post-processing to strip markdown code fences if AI didn't follow the prompt
+		if (content.startsWith("```markdown")) {
+			content = content.replace(/^```markdown\n?/, "").replace(/\n?```$/, "");
+		} else if (content.startsWith("```")) {
+			content = content.replace(/^```\n?/, "").replace(/\n?```$/, "");
+		}
+
+		return content.trim();
 	} catch (err: unknown) {
 		throw new Error(
 			`Copilot CLI failed: ${err instanceof Error ? err.message : String(err)}`,
