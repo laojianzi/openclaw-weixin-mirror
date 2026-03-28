@@ -1,6 +1,6 @@
 {
   "name": "@tencent-weixin/openclaw-weixin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenClaw Weixin channel",
   "license": "MIT",
   "author": "Tencent",
@@ -40,8 +40,8 @@
     ],
     "channel": {
       "id": "openclaw-weixin",
-      "label": "Weixin",
-      "selectionLabel": "Weixin",
+      "label": "openclaw-weixin",
+      "selectionLabel": "openclaw-weixin",
       "docsPath": "/channels/openclaw-weixin",
       "docsLabel": "openclaw-weixin",
       "blurb": "Weixin channel",

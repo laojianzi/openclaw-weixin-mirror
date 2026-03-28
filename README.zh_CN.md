@@ -1,5 +1,7 @@
 # 微信
 
+[English](./README.md)
+
 OpenClaw 的微信渠道插件，支持通过扫码完成登录授权。
 
 ## 前提条件

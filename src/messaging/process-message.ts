@@ -18,6 +18,7 @@ import { downloadMediaFromItem } from "../media/media-download.js";
 import { logger } from "../util/logger.js";
 import { redactBody, redactToken } from "../util/redact.js";
 
+import { isDebugMode } from "./debug-mode.js";
 import { sendWeixinErrorNotice } from "./error-notice.js";
 import {
   setContextToken,
@@ -73,6 +74,10 @@ export async function processOneMessage(
   }
 
   const receivedAt = Date.now();
+  const debug = isDebugMode(deps.accountId);
+  const debugTrace: string[] = [];
+  const debugTs: Record<string, number> = { received: receivedAt };
+
   const textBody = extractTextBody(full.item_list);
   if (textBody.startsWith("/")) {
     const slashResult = await handleSlashCommand(textBody, {
@@ -88,6 +93,16 @@ export async function processOneMessage(
       logger.info(`[weixin] Slash command handled, skipping AI pipeline`);
       return;
     }
+  }
+
+  if (debug) {
+    const itemTypes = full.item_list?.map((i) => i.type).join(",") ?? "none";
+    debugTrace.push(
+      "── 收消息 ──",
+      `│ seq=${full.seq ?? "?"} msgId=${full.message_id ?? "?"} from=${full.from_user_id ?? "?"}`,
+      `│ body="${textBody.slice(0, 40)}${textBody.length > 40 ? "…" : ""}" (len=${textBody.length}) itemTypes=[${itemTypes}]`,
+      `│ sessionId=${full.session_id ?? "?"} contextToken=${full.context_token ? "present" : "none"}`,
+    );
   }
 
   const mediaOpts: WeixinInboundMediaOpts = {};
@@ -119,6 +134,7 @@ export async function processOneMessage(
       )?.ref_msg?.message_item
     : undefined;
 
+  const mediaDownloadStart = Date.now();
   const mediaItem = mainMediaItem ?? refMediaItem;
   if (mediaItem) {
     const label = refMediaItem ? "ref" : "inbound";
@@ -130,6 +146,14 @@ export async function processOneMessage(
       label,
     });
     Object.assign(mediaOpts, downloaded);
+  }
+  const mediaDownloadMs = Date.now() - mediaDownloadStart;
+
+  if (debug) {
+    debugTrace.push(mediaItem
+      ? `│ mediaDownload: type=${mediaItem.type} cost=${mediaDownloadMs}ms`
+      : "│ mediaDownload: none",
+    );
   }
 
   const ctx = weixinMessageToMsgContext(full, deps.accountId, mediaOpts);
@@ -178,6 +202,13 @@ export async function processOneMessage(
     `authorization: senderId=${senderId} commandAuthorized=${String(commandAuthorized)} senderAllowed=${String(senderAllowedForCommands)}`,
   );
 
+  if (debug) {
+    debugTrace.push(
+      "── 鉴权 & 路由 ──",
+      `│ auth: cmdAuthorized=${String(commandAuthorized)} senderAllowed=${String(senderAllowedForCommands)}`,
+    );
+  }
+
   const route = deps.channelRuntime.routing.resolveAgentRoute({
     cfg: deps.config,
     channel: "openclaw-weixin",
@@ -191,6 +222,13 @@ export async function processOneMessage(
     logger.error(
       `resolveAgentRoute: no agentId resolved for peer=${ctx.To} accountId=${deps.accountId} — message will not be dispatched`,
     );
+  }
+
+  if (debug) {
+    debugTrace.push(
+      `│ route: agent=${route.agentId ?? "none"} session=${route.sessionKey ?? "none"}`,
+    );
+    debugTs.preDispatch = Date.now();
   }
   // Propagate the resolved session key into ctx so dispatchReplyFromConfig uses
   // the correct session (matching the dmScope from config) instead of falling back
@@ -261,6 +299,9 @@ export async function processOneMessage(
     keepaliveIntervalMs: 5000,
   });
 
+  /** Delivery records populated synchronously at deliver() entry, safe to read in finally. */
+  const debugDeliveries: Array<{ textLen: number; media: string; preview: string; ts: number }> = [];
+
   const { dispatcher, replyOptions, markDispatchIdle } =
     deps.channelRuntime.reply.createReplyDispatcherWithTyping({
       humanDelay,
@@ -272,6 +313,15 @@ export async function processOneMessage(
         logger.info(
           `outbound: to=${ctx.To} contextToken=${redactToken(contextToken)} textLen=${text.length} mediaUrl=${mediaUrl ? "present" : "none"}`,
         );
+
+        if (debug) {
+          debugDeliveries.push({
+            textLen: text.length,
+            media: mediaUrl ? "present" : "none",
+            preview: `${text.slice(0, 60)}${text.length > 60 ? "…" : ""}`,
+            ts: Date.now(),
+          });
+        }
 
         try {
           if (mediaUrl) {
@@ -377,5 +427,55 @@ export async function processOneMessage(
     throw err;
   } finally {
     markDispatchIdle();
+
+    logger.info(
+      `debug-check: accountId=${deps.accountId} debug=${String(debug)} hasContextToken=${Boolean(contextToken)} stateDir=${process.env.OPENCLAW_STATE_DIR ?? "(unset)"}`,
+    );
+
+    if (debug && contextToken) {
+      const dispatchDoneAt = Date.now();
+      const eventTs = full.create_time_ms ?? 0;
+      const platformDelay = eventTs > 0 ? `${receivedAt - eventTs}ms` : "N/A";
+      const inboundProcessMs = (debugTs.preDispatch ?? receivedAt) - receivedAt;
+      const aiMs = dispatchDoneAt - (debugTs.preDispatch ?? receivedAt);
+      const totalTime = eventTs > 0 ? `${dispatchDoneAt - eventTs}ms` : `${dispatchDoneAt - receivedAt}ms`;
+
+      if (debugDeliveries.length > 0) {
+        debugTrace.push("── 回复 ──");
+        for (const d of debugDeliveries) {
+          debugTrace.push(
+            `│ textLen=${d.textLen} media=${d.media}`,
+            `│ text="${d.preview}"`,
+          );
+        }
+        const firstTs = debugDeliveries[0].ts;
+        debugTrace.push(`│ deliver耗时: ${dispatchDoneAt - firstTs}ms`);
+      } else {
+        debugTrace.push("── 回复 ──", "│ (deliver未捕获)");
+      }
+
+      debugTrace.push(
+        "── 耗时 ──",
+        `├ 平台→插件: ${platformDelay}`,
+        `├ 入站处理(auth+route+media): ${inboundProcessMs}ms (mediaDownload: ${mediaDownloadMs}ms)`,
+        `├ AI生成+回复: ${aiMs}ms`,
+        `├ 总耗时: ${totalTime}`,
+        `└ eventTime: ${eventTs > 0 ? new Date(eventTs).toISOString() : "N/A"}`,
+      );
+
+      const timingText = `⏱ Debug 全链路\n${debugTrace.join("\n")}`;
+
+      logger.info(`debug-timing: sending to=${ctx.To}`);
+      try {
+        await sendMessageWeixin({
+          to: ctx.To,
+          text: timingText,
+          opts: { baseUrl: deps.baseUrl, token: deps.token, contextToken },
+        });
+        logger.info(`debug-timing: sent OK`);
+      } catch (debugErr) {
+        logger.error(`debug-timing: send FAILED err=${String(debugErr)}`);
+      }
+    }
   }
 }

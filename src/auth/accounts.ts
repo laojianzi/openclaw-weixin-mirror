@@ -4,6 +4,7 @@ import path from "node:path";
 import { normalizeAccountId } from "openclaw/plugin-sdk";
 import type { OpenClawConfig } from "openclaw/plugin-sdk";
 
+import { getWeixinRuntime } from "../runtime.js";
 import { resolveStateDir } from "../storage/state-dir.js";
 import { logger } from "../util/logger.js";
 
@@ -223,42 +224,9 @@ export function loadConfigRouteTag(accountId?: string): string | undefined {
 }
 
 /**
- * Touch openclaw.json to trigger channel reload.
- * Updates `channels.<channelId>._accountsUpdatedAt` so config-reload detects a change
- * and restarts the channel.
+ * No-op stub — config reload is now handled externally via `openclaw gateway restart`.
  */
-export function triggerWeixinChannelReload(): void {
-  try {
-    const configPath = resolveConfigPath();
-    logger.info(`triggerWeixinChannelReload: configPath=${configPath}`);
-
-    if (!fs.existsSync(configPath)) {
-      logger.warn(`triggerWeixinChannelReload: config not found at ${configPath}`);
-      return;
-    }
-
-    const raw = fs.readFileSync(configPath, "utf-8");
-    const cfg = JSON.parse(raw) as Record<string, unknown>;
-    const channels = (cfg.channels ?? {}) as Record<string, unknown>;
-    const section = (channels["openclaw-weixin"] ?? {}) as Record<string, unknown>;
-
-    const updated = {
-      ...cfg,
-      channels: {
-        ...channels,
-        "openclaw-weixin": {
-          ...section,
-          _accountsUpdatedAt: Date.now(),
-        },
-      },
-    };
-
-    fs.writeFileSync(configPath, JSON.stringify(updated, null, 2), "utf-8");
-    logger.info(`triggerWeixinChannelReload: wrote to ${configPath}`);
-  } catch (err) {
-    logger.error(`triggerWeixinChannelReload: failed: ${String(err)}`);
-  }
-}
+export async function triggerWeixinChannelReload(): Promise<void> {}
 
 // ---------------------------------------------------------------------------
 // Account resolution (merge config + stored credentials)
