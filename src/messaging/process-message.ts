@@ -381,11 +381,7 @@ export async function processOneMessage(
         deps.errLog(`weixin reply ${info.kind}: ${String(err)}`);
         const errMsg = err instanceof Error ? err.message : String(err);
         let notice: string;
-        if (errMsg.includes("contextToken is required")) {
-          // No contextToken means we cannot send a notice either; just log.
-          logger.warn(`onError: contextToken missing, cannot send error notice to=${ctx.To}`);
-          return;
-        } else if (errMsg.includes("remote media download failed") || errMsg.includes("fetch")) {
+        if (errMsg.includes("remote media download failed") || errMsg.includes("fetch")) {
           notice = `⚠️ 媒体文件下载失败，请检查链接是否可访问。`;
         } else if (
           errMsg.includes("getUploadUrl") ||
@@ -416,7 +412,7 @@ export async function processOneMessage(
           ctx: finalized,
           cfg: deps.config,
           dispatcher,
-          replyOptions,
+          replyOptions: { ...replyOptions, disableBlockStreaming: false },
         }),
     });
     logger.debug(`dispatchReplyFromConfig: done agentId=${route.agentId ?? "(none)"}`);

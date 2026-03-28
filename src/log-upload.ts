@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk";
 
 
 /** Minimal subset of commander's Command used by registerWeixinCli. */
@@ -42,7 +43,7 @@ function resolveLogFileName(file: string): string {
 }
 
 function mainLogDir(): string {
-  return path.join("/tmp", "openclaw");
+  return resolvePreferredOpenClawTmpDir();
 }
 
 function getConfiguredUploadUrl(config: OpenClawConfig): string | undefined {
