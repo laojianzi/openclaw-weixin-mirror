@@ -3,6 +3,7 @@
     "target": "ES2025",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "paths": {
       "#/*": ["./scripts/*"]
     },
@@ -13,7 +14,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noUncheckedSideEffectImports": true,
-    "types": []
+    "types": ["bun-types", "node"]
   },
   "include": ["scripts/**/*.ts"]
 }
