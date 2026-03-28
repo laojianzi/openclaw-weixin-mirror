@@ -82,8 +82,6 @@ export async function syncVersions(params: SyncParams): Promise<void> {
 		console.log(`Removing tarball ${tarballPath}...`);
 		rmSync(tarballPath, { force: true });
 
-		run("git", ["checkout", orphanBranch]);
-
 		console.log("Cleaning working directory...");
 		try {
 			run("git", ["reset", "--hard", "HEAD"]);
