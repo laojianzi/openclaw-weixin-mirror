@@ -1,103 +1,132 @@
-import { existsSync, mkdirSync, rmSync, cpSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { gitBranchExists, gitTagExists, run, runOutput } from '#/lib/git.ts';
+import { gitBranchExists, gitTagExists, run, runOutput } from "#/lib/git.ts";
 
 export interface SyncParams {
-  readonly packageName: string;
-  readonly versions: ReadonlyArray<string>;
+	readonly packageName: string;
+	readonly versions: ReadonlyArray<string>;
 }
 
 export async function syncVersions(params: SyncParams): Promise<void> {
-  if (params.versions.length === 0) {
-    console.log('No new versions to sync.');
-    return;
-  }
+	if (params.versions.length === 0) {
+		console.log("No new versions to sync.");
+		return;
+	}
 
-  console.log(`Syncing ${params.versions.length} versions: ${params.versions.join(', ')}`);
+	console.log(
+		`Syncing ${params.versions.length} versions: ${params.versions.join(", ")}`,
+	);
 
-  run('git', ['config', 'user.name', 'github-actions[bot]']);
-  run('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+	run("git", ["config", "user.name", "github-actions[bot]"]);
+	run("git", [
+		"config",
+		"user.email",
+		"github-actions[bot]@users.noreply.github.com",
+	]);
 
-  const orphanBranch = 'orphan';
-  const repoDir = process.cwd();
+	const orphanBranch = "orphan";
+	const repoDir = process.cwd();
 
-  try {
-    run('git', ['fetch', 'origin']);
-  } catch {
-    console.log('Git fetch origin failed (might be a new repository). Ignoring.');
-  }
+	try {
+		run("git", ["fetch", "origin"]);
+	} catch {
+		console.log(
+			"Git fetch origin failed (might be a new repository). Ignoring.",
+		);
+	}
 
-  if (gitBranchExists(orphanBranch)) {
-    console.log(`Branch ${orphanBranch} exists. Checking it out.`);
-    try {
-      run('git', ['checkout', orphanBranch]);
-    } catch {
-      run('git', ['checkout', '-b', orphanBranch, `origin/${orphanBranch}`]);
-    }
-  } else {
-    console.log(`Branch ${orphanBranch} does not exist. Creating as orphan.`);
-    run('git', ['checkout', '--orphan', orphanBranch]);
-    run('git', ['reset']);
-    run('git', ['clean', '-fdx']);
-  }
+	if (gitBranchExists(orphanBranch)) {
+		console.log(`Branch ${orphanBranch} exists. Checking it out.`);
+		try {
+			run("git", ["checkout", orphanBranch]);
+		} catch {
+			run("git", ["checkout", "-b", orphanBranch, `origin/${orphanBranch}`]);
+		}
+	} else {
+		console.log(`Branch ${orphanBranch} does not exist. Creating as orphan.`);
+		run("git", ["checkout", "--orphan", orphanBranch]);
+		run("git", ["reset"]);
+		run("git", ["clean", "-fdx"]);
+	}
 
-  for (const version of params.versions) {
-    console.log(`\n--- Processing version ${version} ---`);
+	for (const version of params.versions) {
+		console.log(`\n--- Processing version ${version} ---`);
 
-    if (gitTagExists(version)) {
-      console.log(`Tag ${version} already exists. Skipping.`);
-      continue;
-    }
+		if (gitTagExists(version)) {
+			console.log(`Tag ${version} already exists. Skipping.`);
+			continue;
+		}
 
-    const tempPkgDir = join(tmpdir(), `pkg-${version}`);
+		const tempPkgDir = join(tmpdir(), `pkg-${version}`);
 
-    if (existsSync(tempPkgDir)) {
-      rmSync(tempPkgDir, { recursive: true, force: true });
-    }
-    mkdirSync(tempPkgDir, { recursive: true });
+		if (existsSync(tempPkgDir)) {
+			rmSync(tempPkgDir, { recursive: true, force: true });
+		}
+		mkdirSync(tempPkgDir, { recursive: true });
 
-    console.log(`Packing ${params.packageName}@${version}...`);
-    const tarballName = runOutput('npm', ['pack', `${params.packageName}@${version}`, '--silent'], {
-      cwd: tempPkgDir,
-    });
-    const tarballPath = join(tempPkgDir, tarballName);
+		console.log(`Packing ${params.packageName}@${version}...`);
+		const tarballName = runOutput(
+			"npm",
+			["pack", `${params.packageName}@${version}`, "--silent"],
+			{
+				cwd: tempPkgDir,
+			},
+		);
+		const tarballPath = join(tempPkgDir, tarballName);
 
-    console.log(`Extracting ${tarballPath} into temp directory...`);
-    run('tar', ['-xzf', tarballPath, '-C', tempPkgDir, '--strip-components=1']);
+		console.log(`Extracting ${tarballPath} into temp directory...`);
+		run("tar", ["-xzf", tarballPath, "-C", tempPkgDir, "--strip-components=1"]);
 
-    console.log(`Removing tarball ${tarballPath}...`);
-    rmSync(tarballPath, { force: true });
+		console.log(`Removing tarball ${tarballPath}...`);
+		rmSync(tarballPath, { force: true });
 
-    run('git', ['checkout', orphanBranch]);
+		run("git", ["checkout", orphanBranch]);
 
-    console.log('Cleaning working directory...');
-    try {
-      run('git', ['reset', '--hard', 'HEAD']);
-    } catch {
-      // Might fail if no commits yet (fresh orphan), ignore
-    }
-    run('find', ['.', '-maxdepth', '1', '!', '-name', '.git', '!', '-name', '.', '-exec', 'rm', '-rf', '{}', '+']);
-    run('git', ['clean', '-fdx']);
+		console.log("Cleaning working directory...");
+		try {
+			run("git", ["reset", "--hard", "HEAD"]);
+		} catch {
+			// Might fail if no commits yet (fresh orphan), ignore
+		}
+		run("find", [
+			".",
+			"-maxdepth",
+			"1",
+			"!",
+			"-name",
+			".git",
+			"!",
+			"-name",
+			".",
+			"-exec",
+			"rm",
+			"-rf",
+			"{}",
+			"+",
+		]);
+		run("git", ["clean", "-fdx"]);
 
-    console.log(`Copying files from ${tempPkgDir} to ${repoDir}...`);
-    cpSync(tempPkgDir, repoDir, { recursive: true });
+		console.log(`Copying files from ${tempPkgDir} to ${repoDir}...`);
+		cpSync(tempPkgDir, repoDir, { recursive: true });
 
-    rmSync(tempPkgDir, { recursive: true, force: true });
+		rmSync(tempPkgDir, { recursive: true, force: true });
 
-    console.log('Committing changes...');
-    run('git', ['add', '-A']);
+		console.log("Committing changes...");
+		run("git", ["add", "-A"]);
 
-    try {
-      run('git', ['commit', '-m', version]);
-      console.log(`Creating tag ${version}...`);
-      run('git', ['tag', version]);
-    } catch {
-      console.log(`Commit or tag failed for ${version}. Maybe no changes?`);
-    }
-  }
+		try {
+			run("git", ["commit", "-m", version]);
+			console.log(`Creating tag ${version}...`);
+			run("git", ["tag", version]);
+		} catch {
+			console.log(`Commit or tag failed for ${version}. Maybe no changes?`);
+		}
+	}
 
-  console.log('\n--- Finished processing all versions. Pushing orphan branch and tags ---');
-  run('git', ['push', 'origin', orphanBranch, '--tags']);
+	console.log(
+		"\n--- Finished processing all versions. Pushing orphan branch and tags ---",
+	);
+	run("git", ["push", "origin", orphanBranch, "--tags"]);
 }
