@@ -27,10 +27,12 @@
 ## Required Environment Variables
 - `GITHUB_REPOSITORY`: `owner/repo` identifier.
 - `GITHUB_TOKEN`: token used for GitHub API and release creation.
+- `COPILOT_GITHUB_TOKEN`: token used for GitHub Copilot CLI (AI changelog).
 - `GITHUB_OUTPUT`: optional; used for workflow output values.
 
 ## Setup Commands
 - Install dependencies: `bun install --frozen-lockfile`
+- Install Copilot CLI: `npm install -g @github/copilot`
 - Show top-level dependencies: `bun pm ls`
 - Verify Bun version: `bun --version`
 
@@ -42,7 +44,9 @@ This repo does not have a transpile/build step for runtime execution.
 - No emit build step is required.
 
 ### Lint / Static Checks
-- No ESLint/Prettier/Biome config is currently present.
+- Biome is used for fast linting and formatting.
+- Check formatting/lint: `bun run lint`
+- Auto-fix formatting/lint: `bun run format`
 - Type-check command: `bun run typecheck`
 - Direct equivalent: `bunx tsc --noEmit`
 
@@ -65,7 +69,7 @@ This repo does not have a transpile/build step for runtime execution.
 - Stage flow:
   1) check npm vs releases
   2) sync unsynced versions into `orphan`
-  3) generate releases
+  3) generate releases (requires `COPILOT_GITHUB_TOKEN`)
 
 ### Check Stage
 - Internal entry: `checkForUnsyncedVersions(...)` in `scripts/check.ts`
@@ -81,6 +85,7 @@ This repo does not have a transpile/build step for runtime execution.
 - Internal entry: `generateReleases(...)` in `scripts/release.ts`
 - Input: typed params (token, repository, versions)
 - Output: GitHub Releases for synced versions
+- Requirement: `COPILOT_GITHUB_TOKEN` must be in the environment to use the GitHub Copilot CLI.
 
 ## TypeScript Configuration Expectations
 - Keep `tsconfig.json` explicit and self-documenting.
@@ -88,13 +93,14 @@ This repo does not have a transpile/build step for runtime execution.
   - `target: ES2025`
   - `module: ESNext`
   - `moduleResolution: bundler`
+  - `allowImportingTsExtensions: true`
   - `lib: ["ES2025"]`
   - `noEmit: true`
   - `strict: true`
   - `noUncheckedIndexedAccess: true`
   - `noImplicitOverride: true`
   - `noUncheckedSideEffectImports: true`
-  - `types: []`
+  - `types: ["bun-types", "node"]`
 
 ## Import Conventions
 - Use `#/` subpath imports for project modules.
@@ -106,9 +112,10 @@ This repo does not have a transpile/build step for runtime execution.
 - Keep one import declaration per line group for readability.
 
 ## Formatting And Naming
-- Indentation: 2 spaces.
+- Tool: Biome (config in `biome.json`).
+- Indentation: 1 tab (default Biome preference).
 - Strings: single quotes.
-- Semicolons: required.
+- Semicolons: always.
 - Function/variable names: `camelCase`.
 - Types/interfaces: `PascalCase`.
 - Env keys: `UPPER_SNAKE_CASE` in `process.env` access.
