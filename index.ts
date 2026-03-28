@@ -4,7 +4,7 @@ import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-sch
 import { weixinPlugin } from "./src/channel.js";
 import { assertHostCompatibility } from "./src/compat.js";
 import { WeixinConfigSchema } from "./src/config/config-schema.js";
-import { registerWeixinCli } from "./src/log-upload.js";
+import { registerWeixinCli } from "./src/weixin-cli.js";
 import { setWeixinRuntime } from "./src/runtime.js";
 
 export default {
