@@ -13,55 +13,33 @@ This repository is an unofficial mirror of the npm package [`@tencent-weixin/ope
 
 ```mermaid
 flowchart LR
-  classDef ext fill:#f7f7f7,stroke:#999,stroke-width:1px,color:#222;
-  classDef core fill:#eaf3ff,stroke:#4a78c2,stroke-width:1px,color:#102a43;
-  classDef data fill:#eefbf3,stroke:#2f9e64,stroke-width:1px,color:#1b4332;
-  classDef ci fill:#fff4e6,stroke:#e07a00,stroke-width:1px,color:#7a3e00;
+  classDef source fill:#f7f7f7,stroke:#999,stroke-width:1px;
+  classDef engine fill:#eaf3ff,stroke:#4a78c2,stroke-width:2px;
+  classDef target fill:#eefbf3,stroke:#2f9e64,stroke-width:1px;
 
-  GH[GitHub Actions<br/>.github/workflows/sync.yml]:::ci --> IDX[scripts/index.ts<br/>Orchestrator]:::core
-
-  subgraph Stage1[Check Stage]
-    CHK[scripts/check.ts]:::core
-    NPM[(npm Registry)]:::ext
-    API[(GitHub REST API)]:::ext
+  subgraph npm[npm Registry]
+    direction TB
+    P1[Package Releases]:::source
   end
 
-  subgraph Stage2[Sync Stage]
-    SYN[scripts/sync.ts]:::core
-    GIT[scripts/lib/git.ts]:::core
-    ORPHAN[(orphan branch)]:::data
-    TAGS[(Git tags)]:::data
+  subgraph Engine[Automation Engine]
+    direction TB
+    S1[Mirroring Logic]:::engine
+    S2[AI Intelligence]:::engine
   end
 
-  subgraph Stage3[Release Stage]
-    REL[scripts/release.ts]:::core
-    COPILOT[(GitHub Copilot CLI)]:::ext
-    RELEASES[(GitHub Releases)]:::data
+  subgraph GH[GitHub Repository]
+    direction TB
+    A1[(orphan branch<br/>Unpacked Source)]:::target
+    A2[(Git Tags<br/>Version Pointers)]:::target
+    A3[(GitHub Releases<br/>AI Changelogs)]:::target
   end
 
-  subgraph SharedLibs[Shared Libraries]
-    ENV[scripts/lib/env.ts]:::core
-    GH_LIB[scripts/lib/github.ts]:::core
-    NPM_LIB[scripts/lib/npm.ts]:::core
-  end
-
-  IDX --> CHK --> SYN --> REL
-
-  CHK --> NPM
-  CHK --> API
-  CHK -.uses.-> ENV
-  CHK -.uses.-> GH_LIB
-  CHK -.uses.-> NPM_LIB
-
-  SYN --> GIT
-  SYN --> ORPHAN
-  SYN --> TAGS
-  SYN -.uses.-> ENV
-
-  REL --> COPILOT
-  REL --> RELEASES
-  REL -.uses.-> GH_LIB
-  REL -.reads tags/diff.-> GIT
+  P1 -->|Fetch Tarball| S1
+  S1 -->|Unpack & Commit| A1
+  S1 -->|Tag Version| A2
+  A2 -->|Diff Analysis| S2
+  S2 -->|Publish Notes| A3
 ```
 
 ## Runtime And Tooling
