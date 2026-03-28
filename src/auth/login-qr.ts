@@ -318,6 +318,8 @@ export async function waitForWeixinLogin(opts: {
         message: `Login failed: ${String(err)}`,
       };
     }
+
+    await new Promise((r) => setTimeout(r, 1000));
   }
 
   logger.warn(
