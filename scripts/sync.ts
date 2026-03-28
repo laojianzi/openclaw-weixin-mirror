@@ -39,8 +39,8 @@ export async function syncVersions(params: SyncParams): Promise<void> {
   } else {
     console.log(`Branch ${orphanBranch} does not exist. Creating as orphan.`);
     run(`git checkout --orphan ${orphanBranch}`);
-    run('git rm -rf .');
-    run('git commit --allow-empty -m "Initial empty commit"');
+    run('git reset');
+    run('git clean -fdx');
   }
 
   for (const version of params.versions) {
