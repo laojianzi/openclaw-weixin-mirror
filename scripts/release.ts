@@ -42,12 +42,13 @@ ${diffStr}
 
 	// Use copilot -p with --silent and --yolo for non-interactive scripting
 	// We specify COPILOT_GITHUB_TOKEN in the environment
+	// Using bunx --bun ensures we use the local version in node_modules
 	const { execFileSync } = await import("node:child_process");
 
 	try {
 		const output = execFileSync(
-			"copilot",
-			["-p", fullPrompt, "--silent", "--yolo"],
+			"bunx",
+			["--bun", "copilot", "-p", fullPrompt, "--silent", "--yolo"],
 			{
 				env: { ...process.env, COPILOT_GITHUB_TOKEN: githubToken },
 				encoding: "utf8",
