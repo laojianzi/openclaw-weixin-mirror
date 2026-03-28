@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizeAccountId } from "openclaw/plugin-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
 
 import { getWeixinRuntime } from "../runtime.js";
 import { resolveStateDir } from "../storage/state-dir.js";
@@ -291,9 +291,32 @@ export function loadConfigRouteTag(accountId?: string): string | undefined {
 }
 
 /**
- * No-op stub — config reload is now handled externally via `openclaw gateway restart`.
+ * Ensure the openclaw-weixin channel section exists in openclaw.json so the gateway
+ * recognises it as a configured channel at startup, then trigger a config reload.
  */
-export async function triggerWeixinChannelReload(): Promise<void> {}
+export async function triggerWeixinChannelReload(): Promise<void> {
+  try {
+    const { loadConfig, writeConfigFile } = await import("openclaw/plugin-sdk/config-runtime");
+    const cfg = loadConfig();
+    const channels = (cfg.channels ?? {}) as Record<string, unknown>;
+    if (!channels["openclaw-weixin"] || Object.keys(channels["openclaw-weixin"] as Record<string, unknown>).every((k) => k === "enabled")) {
+      const updated: OpenClawConfig = {
+        ...cfg,
+        channels: {
+          ...channels,
+          "openclaw-weixin": {
+            ...(channels["openclaw-weixin"] as Record<string, unknown> ?? {}),
+            accounts: {},
+          },
+        },
+      };
+      await writeConfigFile(updated);
+      logger.info("triggerWeixinChannelReload: wrote channel config to openclaw.json");
+    }
+  } catch (err) {
+    logger.warn(`triggerWeixinChannelReload: failed to update config: ${String(err)}`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Account resolution (merge config + stored credentials)

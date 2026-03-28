@@ -1,12 +1,12 @@
 import path from "node:path";
 
+import { createTypingCallbacks } from "openclaw/plugin-sdk/channel-runtime";
 import {
-  createTypingCallbacks,
   resolveSenderCommandAuthorizationWithRuntime,
   resolveDirectDmAuthorizationOutcome,
-  resolvePreferredOpenClawTmpDir,
-} from "openclaw/plugin-sdk";
-import type { PluginRuntime } from "openclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/command-auth";
+import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/infra-runtime";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 
 import { sendTyping } from "../api/api.js";
 import type { WeixinMessage } from "../api/types.js";

@@ -1,27 +1,33 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { buildChannelConfigSchema } from "openclaw/plugin-sdk";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-schema";
 
 import { weixinPlugin } from "./src/channel.js";
+import { assertHostCompatibility } from "./src/compat.js";
 import { WeixinConfigSchema } from "./src/config/config-schema.js";
 import { registerWeixinCli } from "./src/log-upload.js";
 import { setWeixinRuntime } from "./src/runtime.js";
 
-const plugin = {
+export default {
   id: "openclaw-weixin",
   name: "Weixin",
   description: "Weixin channel (getUpdates long-poll + sendMessage)",
   configSchema: buildChannelConfigSchema(WeixinConfigSchema),
   register(api: OpenClawPluginApi) {
-    if (!api?.runtime) {
-      throw new Error("[weixin] api.runtime is not available in register()");
+    // Fail-fast: reject incompatible host versions before any side-effects.
+    assertHostCompatibility(api.runtime?.version);
+
+    if (api.runtime) {
+      setWeixinRuntime(api.runtime);
     }
-    setWeixinRuntime(api.runtime);
 
     api.registerChannel({ plugin: weixinPlugin });
+
+    // registrationMode exists in 2026.3.22+; skip heavy registrations in setup-only mode.
+    const mode = (api as { registrationMode?: string }).registrationMode;
+    if (mode && mode !== "full") return;
+
     api.registerCli(({ program, config }) => registerWeixinCli({ program, config }), {
       commands: ["openclaw-weixin"],
     });
   },
 };
-
-export default plugin;

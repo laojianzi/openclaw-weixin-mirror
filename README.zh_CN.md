@@ -4,9 +4,20 @@
 
 OpenClaw 的微信渠道插件，支持通过扫码完成登录授权。
 
+## 兼容性
+
+| 插件版本 | OpenClaw 版本            | npm dist-tag | 状态   |
+|---------|--------------------------|--------------|--------|
+| 2.0.x   | >=2026.3.22              | `latest`     | 活跃   |
+| 1.0.x   | >=2026.1.0 <2026.3.22    | `legacy`     | 维护中 |
+
+> 插件在启动时会检查宿主版本，如果运行的 OpenClaw 版本超出支持范围，插件将拒绝加载。
+
 ## 前提条件
 
 已安装 [OpenClaw](https://docs.openclaw.ai/install)（需要 `openclaw` CLI 可用）。
+
+查看版本：`openclaw --version`
 
 ## 一键安装
 
@@ -269,3 +280,34 @@ openclaw config set agents.mode per-channel-per-peer
 6. 使用返回的 `encrypt_query_param` 构造 `CDNMedia` 引用，放入 `MessageItem` 发送
 
 > 完整的类型定义见 [`src/api/types.ts`](src/api/types.ts)，API 调用实现见 [`src/api/api.ts`](src/api/api.ts)。
+
+## 卸载
+
+```bash
+openclaw openclaw-weixin uninstall
+```
+
+## 故障排查
+
+### "requires OpenClaw >=2026.3.22" 报错
+
+你的 OpenClaw 版本太旧，不兼容当前插件版本。检查版本：
+
+```bash
+openclaw --version
+```
+
+安装旧版插件线：
+
+```bash
+openclaw plugins install @tencent-weixin/openclaw-weixin@legacy
+```
+
+### Channel 显示 "OK" 但未连接
+
+确保 `~/.openclaw/openclaw.json` 中 `plugins.entries.openclaw-weixin.enabled` 为 `true`：
+
+```bash
+openclaw config set plugins.entries.openclaw-weixin.enabled true
+openclaw gateway restart
+```
