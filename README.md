@@ -6,7 +6,7 @@ This repository is an unofficial mirror of the npm package [`@tencent-weixin/ope
 
 - **Version mirroring**: Reliably synchronize `@tencent-weixin/openclaw-weixin` releases from npm into this repository with traceable history.
 - **Source archival**: Preserve unpacked source snapshots on the `orphan` branch (one commit and one tag per version).
-- **Release intelligence**: Generate English release notes from version diffs and publish them to GitHub Releases.
+- **Release intelligence**: Generate English release notes from version diffs and README changes using the GitHub Copilot CLI.
 - **Developer enablement**: Provide readable source, release notes, and historical traceability to support both human and AI-assisted analysis and extension.
 
 ## System Architecture
@@ -35,7 +35,7 @@ flowchart LR
 
   subgraph Stage3[Release Stage]
     REL[scripts/release.ts]:::core
-    MODEL[(GitHub Models API)]:::ext
+    COPILOT[(GitHub Copilot CLI)]:::ext
     RELEASES[(GitHub Releases)]:::data
   end
 
@@ -58,7 +58,7 @@ flowchart LR
   SYN --> TAGS
   SYN -.uses.-> ENV
 
-  REL --> MODEL
+  REL --> COPILOT
   REL --> RELEASES
   REL -.uses.-> GH_LIB
   REL -.reads tags/diff.-> GIT
@@ -69,6 +69,8 @@ flowchart LR
 - Runtime: Bun (native TypeScript execution)
 - Language: TypeScript (ESM)
 - Package manager: Bun
+- AI Engine: GitHub Copilot CLI (`@github/copilot`)
+- Linter/Formatter: Biome
 - Main entrypoint: `scripts/index.ts`
 
 ## Browsing Versions
@@ -91,6 +93,18 @@ Run the full sync orchestration (check -> sync -> release):
 bun run scripts/index.ts
 ```
 
+Check code quality (lint & format):
+
+```bash
+bun run lint
+```
+
+Auto-fix code quality issues:
+
+```bash
+bun run format
+```
+
 Type-check scripts:
 
 ```bash
@@ -103,19 +117,8 @@ Run all tests:
 bun test
 ```
 
-Run a single test file:
-
-```bash
-bun test scripts/lib/env.test.ts
-```
-
-Run a single test by name pattern:
-
-```bash
-bun test --test-name-pattern "throws when repository format is invalid" scripts/lib/env.test.ts
-```
-
 ## Automation
 
 - **Main Branch**: All automation logic, including GitHub Actions workflows and TypeScript scripts used to synchronize the repository with the npm registry, is located on the `main` branch.
-- **Process**: Versions are synced automatically via a scheduled GitHub Actions workflow that runs daily at 03:00 (UTC+8). It executes `bun run scripts/index.ts`, which checks for unsynced versions, imports tarballs to `orphan`, and creates releases using the GitHub Models API.
+- **Process**: Versions are synced automatically via a scheduled GitHub Actions workflow. It executes `bun run scripts/index.ts`, which checks for unsynced versions, imports tarballs to `orphan`, and creates releases using the GitHub Copilot CLI for changelog generation.
+- **CI Caching**: The workflow utilizes Bun's dependency caching to ensure fast and reliable execution.

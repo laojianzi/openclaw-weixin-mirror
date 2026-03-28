@@ -9,20 +9,20 @@
 - Runtime: Bun (native TypeScript execution).
 - Language: TypeScript (ESM modules).
 - Package manager: Bun.
-- Core dependencies: `@octokit/rest`, `semver`.
+- Core dependencies: `@octokit/rest`, `semver`, `@github/copilot`.
 - Type-checker: `typescript`.
 
 ## Repository Layout
 - `scripts/index.ts`: orchestrator (`check -> sync -> release`).
 - `scripts/check.ts`: reads npm versions and computes unsynced versions.
 - `scripts/sync.ts`: checks out `orphan`, imports package tarballs, commits tags, pushes.
-- `scripts/release.ts`: generates AI changelog text and creates GitHub Releases.
+- `scripts/release.ts`: generates AI changelog text using GitHub Copilot CLI and creates GitHub Releases.
 - `scripts/lib/env.ts`: environment parsing and validation.
 - `scripts/lib/github.ts`: Octokit singleton and typed release wrappers.
 - `scripts/lib/npm.ts`: npm registry fetch helper.
-- `scripts/lib/git.ts`: typed git command wrappers.
+- `scripts/lib/git.ts`: typed git command wrappers (using `execFileSync` for safety).
 - `scripts/lib/env.test.ts`: Bun test coverage for env parsing helpers.
-- `.github/workflows/sync.yml`: scheduled/manual workflow entrypoint.
+- `.github/workflows/sync.yml`: scheduled/manual workflow entrypoint with Bun caching.
 
 ## Required Environment Variables
 - `GITHUB_REPOSITORY`: `owner/repo` identifier.
@@ -31,8 +31,7 @@
 - `GITHUB_OUTPUT`: optional; used for workflow output values.
 
 ## Setup Commands
-- Install dependencies: `bun install --frozen-lockfile`
-- Install Copilot CLI: `npm install -g @github/copilot`
+- Install dependencies: `bun install --frozen-lockfile` (includes Copilot CLI).
 - Show top-level dependencies: `bun pm ls`
 - Verify Bun version: `bun --version`
 
@@ -85,7 +84,7 @@ This repo does not have a transpile/build step for runtime execution.
 - Internal entry: `generateReleases(...)` in `scripts/release.ts`
 - Input: typed params (token, repository, versions)
 - Output: GitHub Releases for synced versions
-- Requirement: `COPILOT_GITHUB_TOKEN` must be in the environment to use the GitHub Copilot CLI.
+- Requirement: `COPILOT_GITHUB_TOKEN` must be in the environment to use the GitHub Copilot CLI via `bunx --bun copilot`.
 
 ## TypeScript Configuration Expectations
 - Keep `tsconfig.json` explicit and self-documenting.
