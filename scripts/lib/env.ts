@@ -1,6 +1,7 @@
 export interface Env {
   readonly githubRepository: string;
   readonly githubToken: string;
+  readonly copilotToken?: string;
   readonly githubOutput?: string;
 }
 
@@ -16,6 +17,7 @@ export function parseEnv(): Env {
   return {
     githubRepository: requireEnvVar('GITHUB_REPOSITORY'),
     githubToken: requireEnvVar('GITHUB_TOKEN'),
+    copilotToken: process.env.COPILOT_GITHUB_TOKEN,
     githubOutput: process.env.GITHUB_OUTPUT,
   };
 }

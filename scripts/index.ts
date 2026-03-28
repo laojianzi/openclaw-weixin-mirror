@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   });
 
   await generateReleases({
-    githubToken: env.githubToken,
+    githubToken: env.copilotToken || env.githubToken,
     repository,
     versions: unsyncedVersions,
   });
