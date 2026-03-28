@@ -1,6 +1,6 @@
 # openclaw-weixin Mirror
 
-This repository is an unofficial mirror of the npm package [`@tencent-weixin/openclaw-weixin`](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin).
+This repository is an unofficial mirror of the npm package [`@tencent-weixin/openclaw-weixin`](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin). It is synchronized daily at 03:00 (UTC+8) via GitHub Actions to ensure the mirror stays up-to-date with the latest npm releases.
 
 ## Mission
 
