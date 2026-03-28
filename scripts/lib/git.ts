@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 export interface CommandOptions {
   readonly cwd?: string;
@@ -21,10 +21,11 @@ function formatExecError(command: string, err: unknown): Error {
   return new Error(`Command failed: ${command}\n${String(err)}`);
 }
 
-export function run(command: string, options: CommandOptions = {}): void {
-  console.log(`> ${command}`);
+export function run(command: string, args: string[] = [], options: CommandOptions = {}): void {
+  const fullCommand = `${command} ${args.join(' ')}`;
+  console.log(`> ${fullCommand}`);
   try {
-    const output = execSync(command, {
+    const output = execFileSync(command, args, {
       cwd: options.cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -33,25 +34,25 @@ export function run(command: string, options: CommandOptions = {}): void {
       process.stdout.write(output);
     }
   } catch (err: unknown) {
-    throw formatExecError(command, err);
+    throw formatExecError(fullCommand, err);
   }
 }
 
-export function runOutput(command: string, options: CommandOptions = {}): string {
+export function runOutput(command: string, args: string[] = [], options: CommandOptions = {}): string {
   try {
-    return execSync(command, {
+    return execFileSync(command, args, {
       cwd: options.cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
   } catch (err: unknown) {
-    throw formatExecError(command, err);
+    throw formatExecError(`${command} ${args.join(' ')}`, err);
   }
 }
 
-export function tryRunOutput(command: string, options: CommandOptions = {}): string {
+export function tryRunOutput(command: string, args: string[] = [], options: CommandOptions = {}): string {
   try {
-    return runOutput(command, options);
+    return runOutput(command, args, options);
   } catch {
     return '';
   }
@@ -59,11 +60,11 @@ export function tryRunOutput(command: string, options: CommandOptions = {}): str
 
 export function gitBranchExists(branchName: string): boolean {
   try {
-    runOutput(`git rev-parse --verify origin/${branchName}`);
+    runOutput('git', ['rev-parse', '--verify', `origin/${branchName}`]);
     return true;
   } catch {
     try {
-      runOutput(`git rev-parse --verify ${branchName}`);
+      runOutput('git', ['rev-parse', '--verify', branchName]);
       return true;
     } catch {
       return false;
@@ -73,7 +74,7 @@ export function gitBranchExists(branchName: string): boolean {
 
 export function gitTagExists(tagName: string): boolean {
   try {
-    runOutput(`git rev-parse --verify refs/tags/${tagName}`);
+    runOutput('git', ['rev-parse', '--verify', `refs/tags/${tagName}`]);
     return true;
   } catch {
     return false;

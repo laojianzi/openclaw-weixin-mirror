@@ -43,10 +43,10 @@ ${diffStr}
 
   // Use copilot -p with --silent and --yolo for non-interactive scripting
   // We specify COPILOT_GITHUB_TOKEN in the environment
-  const { execSync } = await import('node:child_process');
+  const { execFileSync } = await import('node:child_process');
 
   try {
-    const output = execSync(`copilot -p ${JSON.stringify(fullPrompt)} --silent --yolo`, {
+    const output = execFileSync('copilot', ['-p', fullPrompt, '--silent', '--yolo'], {
       env: { ...process.env, COPILOT_GITHUB_TOKEN: githubToken },
       encoding: 'utf8',
       maxBuffer: 10 * 1024 * 1024,
@@ -93,12 +93,16 @@ export async function generateReleases(params: ReleaseParams): Promise<void> {
     console.log(`Creating GitHub Release for ${version}...`);
     const isPrerelease = semver.prerelease(version) !== null;
 
-    await createRelease(params.githubToken, params.repository, {
-      tagName: version,
-      name: version,
-      body: changelog,
-      prerelease: isPrerelease,
-    });
-    console.log(`Successfully created release ${version}.`);
+    try {
+      await createRelease(params.githubToken, params.repository, {
+        tagName: version,
+        name: version,
+        body: changelog,
+        prerelease: isPrerelease,
+      });
+      console.log(`Successfully created release ${version}.`);
+    } catch (err: unknown) {
+      throw new Error(`Failed to create release ${version}:: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 }

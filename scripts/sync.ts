@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -17,14 +17,14 @@ export async function syncVersions(params: SyncParams): Promise<void> {
 
   console.log(`Syncing ${params.versions.length} versions: ${params.versions.join(', ')}`);
 
-  run('git config user.name "github-actions[bot]"');
-  run('git config user.email "github-actions[bot]@users.noreply.github.com"');
+  run('git', ['config', 'user.name', 'github-actions[bot]']);
+  run('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
 
   const orphanBranch = 'orphan';
   const repoDir = process.cwd();
 
   try {
-    run('git fetch origin');
+    run('git', ['fetch', 'origin']);
   } catch {
     console.log('Git fetch origin failed (might be a new repository). Ignoring.');
   }
@@ -32,15 +32,15 @@ export async function syncVersions(params: SyncParams): Promise<void> {
   if (gitBranchExists(orphanBranch)) {
     console.log(`Branch ${orphanBranch} exists. Checking it out.`);
     try {
-      run(`git checkout ${orphanBranch}`);
+      run('git', ['checkout', orphanBranch]);
     } catch {
-      run(`git checkout -b ${orphanBranch} origin/${orphanBranch}`);
+      run('git', ['checkout', '-b', orphanBranch, `origin/${orphanBranch}`]);
     }
   } else {
     console.log(`Branch ${orphanBranch} does not exist. Creating as orphan.`);
-    run(`git checkout --orphan ${orphanBranch}`);
-    run('git reset');
-    run('git clean -fdx');
+    run('git', ['checkout', '--orphan', orphanBranch]);
+    run('git', ['reset']);
+    run('git', ['clean', '-fdx']);
   }
 
   for (const version of params.versions) {
@@ -59,46 +59,45 @@ export async function syncVersions(params: SyncParams): Promise<void> {
     mkdirSync(tempPkgDir, { recursive: true });
 
     console.log(`Packing ${params.packageName}@${version}...`);
-    const tarballName = runOutput(`npm pack ${params.packageName}@${version} --silent`, {
+    const tarballName = runOutput('npm', ['pack', `${params.packageName}@${version}`, '--silent'], {
       cwd: tempPkgDir,
     });
     const tarballPath = join(tempPkgDir, tarballName);
 
     console.log(`Extracting ${tarballPath} into temp directory...`);
-    run(`tar -xzf "${tarballPath}" -C "${tempPkgDir}" --strip-components=1`);
+    run('tar', ['-xzf', tarballPath, '-C', tempPkgDir, '--strip-components=1']);
 
     console.log(`Removing tarball ${tarballPath}...`);
     rmSync(tarballPath, { force: true });
 
-    run(`git checkout ${orphanBranch}`);
+    run('git', ['checkout', orphanBranch]);
 
     console.log('Cleaning working directory...');
     try {
-      run('git reset --hard HEAD');
+      run('git', ['reset', '--hard', 'HEAD']);
     } catch {
       // Might fail if no commits yet (fresh orphan), ignore
     }
-    run('find . -maxdepth 1 ! -name .git ! -name . -exec rm -rf {} +');
-    run('git clean -fdx');
+    run('find', ['.', '-maxdepth', '1', '!', '-name', '.git', '!', '-name', '.', '-exec', 'rm', '-rf', '{}', '+']);
+    run('git', ['clean', '-fdx']);
 
     console.log(`Copying files from ${tempPkgDir} to ${repoDir}...`);
-    run(`cp -R "${tempPkgDir}/"* "${repoDir}/" 2>/dev/null || true`);
-    run(`cp -R "${tempPkgDir}/".* "${repoDir}/" 2>/dev/null || true`);
+    cpSync(tempPkgDir, repoDir, { recursive: true });
 
     rmSync(tempPkgDir, { recursive: true, force: true });
 
     console.log('Committing changes...');
-    run('git add -A');
+    run('git', ['add', '-A']);
 
     try {
-      run(`git commit -m "${version}"`);
+      run('git', ['commit', '-m', version]);
       console.log(`Creating tag ${version}...`);
-      run(`git tag ${version}`);
+      run('git', ['tag', version]);
     } catch {
       console.log(`Commit or tag failed for ${version}. Maybe no changes?`);
     }
   }
 
   console.log('\n--- Finished processing all versions. Pushing orphan branch and tags ---');
-  run(`git push origin ${orphanBranch} --tags`);
+  run('git', ['push', 'origin', orphanBranch, '--tags']);
 }
