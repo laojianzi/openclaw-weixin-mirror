@@ -46,7 +46,9 @@ export async function syncVersions(params: SyncParams): Promise<void> {
 		}
 	} else {
 		console.log(`Branch ${orphanBranch} does not exist. Creating as orphan.`);
+		// This creates an unborn branch. The index and working tree still contain files from the previous branch.
 		run("git", ["checkout", "--orphan", orphanBranch]);
+		// We only want to 'reset' and 'clean' for the very first time to make it a truly blank root.
 		run("git", ["reset"]);
 		run("git", ["clean", "-fdx"]);
 	}
@@ -83,11 +85,8 @@ export async function syncVersions(params: SyncParams): Promise<void> {
 		rmSync(tarballPath, { force: true });
 
 		console.log("Cleaning working directory...");
-		try {
-			run("git", ["reset", "--hard", "HEAD"]);
-		} catch {
-			// Might fail if no commits yet (fresh orphan), ignore
-		}
+		// We keep the .git directory to preserve history.
+		// We remove everything else to ensure the next commit exactly matches the npm package content.
 		run("find", [
 			".",
 			"-maxdepth",
@@ -112,6 +111,8 @@ export async function syncVersions(params: SyncParams): Promise<void> {
 		rmSync(tempPkgDir, { recursive: true, force: true });
 
 		console.log("Committing changes...");
+		// git add -A will stage all changes, including deletions of files from the previous version.
+		// This ensures history is preserved and diffs are viewable.
 		run("git", ["add", "-A"]);
 
 		try {
