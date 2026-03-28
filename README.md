@@ -55,7 +55,7 @@ flowchart LR
 
 - **Source Code**: The un-minified source code for each version lives on the `orphan` branch, with a linear history (one commit per version).
 - **By Tag/Version**: You can browse code for a specific version by running: `git checkout <version>` (e.g., `git checkout 1.0.0`). Note that tags do not have a `v` prefix.
-- **Releases**: View AI-generated changelogs for each version in the [GitHub Releases](https://github.com/) section of this repository.
+- **Releases**: View AI-generated changelogs for each version in the [GitHub Releases](https://github.com/laojianzi/openclaw-weixin-mirror/releases) section of this repository.
 
 ## Local Development
 
