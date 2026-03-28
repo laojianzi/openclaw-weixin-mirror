@@ -17,8 +17,6 @@ async function generateChangelog(
   diffStr: string,
   readmeStr: string,
 ): Promise<string> {
-  const endpoint = 'https://models.inference.ai.azure.com/chat/completions';
-
   const systemPrompt =
     'You are a professional technical writer. Generate concise, accurate release notes in English based on code diffs and README changes.';
   const userPrompt = `
@@ -41,56 +39,21 @@ Code Diff snippet:
 ${diffStr}
 `;
 
+  const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+
+  // Use copilot -p with --silent and --yolo for non-interactive scripting
+  // We specify COPILOT_GITHUB_TOKEN in the environment
+  const { execSync } = await import('node:child_process');
+
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${githubToken}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      }),
+    const output = execSync(`copilot -p ${JSON.stringify(fullPrompt)} --silent --yolo`, {
+      env: { ...process.env, COPILOT_GITHUB_TOKEN: githubToken },
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
     });
-
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status} ${response.statusText}`);
-    }
-
-    const data: unknown = await response.json();
-    const choices =
-      typeof data === 'object' && data !== null ? Reflect.get(data, 'choices') : undefined;
-
-    if (!Array.isArray(choices)) {
-      throw new Error('Invalid AI response payload: choices missing');
-    }
-
-    const firstChoice = choices.at(0);
-    if (typeof firstChoice !== 'object' || firstChoice === null) {
-      throw new Error('Invalid AI response payload: first choice missing');
-    }
-
-    const message = Reflect.get(firstChoice, 'message');
-    if (typeof message !== 'object' || message === null) {
-      throw new Error('Invalid AI response payload: message missing');
-    }
-
-    const content = Reflect.get(message, 'content');
-    if (typeof content !== 'string') {
-      throw new Error('Invalid AI response payload: content missing');
-    }
-
-    return content.trim();
+    return output.trim();
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`AI Changelog generation failed for ${version}:`, message);
-    return `### 自动生成更新日志失败\n\n版本 ${version} 已发布。由于生成更新日志时遇到错误，请查看源代码了解详细变更。`;
+    throw new Error(`Copilot CLI failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -130,17 +93,12 @@ export async function generateReleases(params: ReleaseParams): Promise<void> {
     console.log(`Creating GitHub Release for ${version}...`);
     const isPrerelease = semver.prerelease(version) !== null;
 
-    try {
-      await createRelease(params.githubToken, params.repository, {
-        tagName: version,
-        name: version,
-        body: changelog,
-        prerelease: isPrerelease,
-      });
-      console.log(`Successfully created release ${version}.`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`Failed to create release ${version}:`, message);
-    }
+    await createRelease(params.githubToken, params.repository, {
+      tagName: version,
+      name: version,
+      body: changelog,
+      prerelease: isPrerelease,
+    });
+    console.log(`Successfully created release ${version}.`);
   }
 }
