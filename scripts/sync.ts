@@ -74,10 +74,11 @@ export async function syncVersions(params: SyncParams): Promise<void> {
 
     console.log('Cleaning working directory...');
     try {
-      run('git rm -rf .');
+      run('git reset --hard HEAD');
     } catch {
-      console.log('git rm failed, likely no tracked files. ignoring.');
+      // Might fail if no commits yet (fresh orphan), ignore
     }
+    run('find . -maxdepth 1 ! -name .git ! -name . -exec rm -rf {} +');
     run('git clean -fdx');
 
     console.log(`Copying files from ${tempPkgDir} to ${repoDir}...`);
