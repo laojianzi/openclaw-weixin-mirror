@@ -1,5 +1,4 @@
 import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { stripMarkdown } from "openclaw/plugin-sdk/text-runtime";
 
 import { sendMessage as sendMessageApi } from "../api/api.js";
 import type { WeixinApiOptions } from "../api/api.js";
@@ -9,31 +8,11 @@ import type { MessageItem, SendMessageReq } from "../api/types.js";
 import { MessageItemType, MessageState, MessageType } from "../api/types.js";
 import type { UploadedFileInfo } from "../cdn/upload.js";
 
+export { StreamingMarkdownFilter } from "./markdown-filter.js";
+
 function generateClientId(): string {
   return generateId("openclaw-weixin");
 }
-
-/**
- * Convert markdown-formatted model reply to plain text for Weixin delivery.
- * Preserves newlines; strips markdown syntax.
- */
-export function markdownToPlainText(text: string): string {
-  let result = text;
-  // Code blocks: strip fences, keep code content
-  result = result.replace(/```[^\n]*\n?([\s\S]*?)```/g, (_, code: string) => code.trim());
-  // Images: remove entirely
-  result = result.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
-  // Links: keep display text only
-  result = result.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
-  // Tables: remove separator rows, then strip leading/trailing pipes and convert inner pipes to spaces
-  result = result.replace(/^\|[\s:|-]+\|$/gm, "");
-  result = result.replace(/^\|(.+)\|$/gm, (_, inner: string) =>
-    inner.split("|").map((cell) => cell.trim()).join("  "),
-  );
-  result = stripMarkdown(result);
-  return result;
-}
-
 
 /** Build a SendMessageReq containing a single text message. */
 function buildTextMessageReq(params: {

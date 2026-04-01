@@ -28,7 +28,8 @@ import {
 } from "./inbound.js";
 import type { WeixinInboundMediaOpts } from "./inbound.js";
 import { sendWeixinMediaFile } from "./send-media.js";
-import { markdownToPlainText, sendMessageWeixin } from "./send.js";
+import { StreamingMarkdownFilter } from "./markdown-filter.js";
+import { sendMessageWeixin } from "./send.js";
 import { handleSlashCommand } from "./slash-commands.js";
 
 const MEDIA_OUTBOUND_TEMP_DIR = path.join(resolvePreferredOpenClawTmpDir(), "weixin/media/outbound-temp");
@@ -309,7 +310,11 @@ export async function processOneMessage(
       humanDelay,
       typingCallbacks,
       deliver: async (payload) => {
-        const text = markdownToPlainText(payload.text ?? "");
+        const rawText = payload.text ?? "";
+        const text = (() => {
+          const f = new StreamingMarkdownFilter();
+          return f.feed(rawText) + f.flush();
+        })();
         const mediaUrl = payload.mediaUrl ?? payload.mediaUrls?.[0];
         logger.debug(`outbound payload: ${redactBody(JSON.stringify(payload))}`);
         logger.info(
@@ -414,7 +419,7 @@ export async function processOneMessage(
           ctx: finalized,
           cfg: deps.config,
           dispatcher,
-          replyOptions: { ...replyOptions, disableBlockStreaming: false },
+          replyOptions: { ...replyOptions, disableBlockStreaming: true },
         }),
     });
     logger.debug(`dispatchReplyFromConfig: done agentId=${route.agentId ?? "(none)"}`);
