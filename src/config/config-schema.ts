@@ -17,4 +17,6 @@ const weixinAccountSchema = z.object({
 /** Top-level weixin config schema (token is stored in credentials file, not config). */
 export const WeixinConfigSchema = weixinAccountSchema.extend({
   accounts: z.record(z.string(), weixinAccountSchema).optional(),
+  /** ISO 8601; bumped on each successful login to refresh gateway config from disk. */
+  channelConfigUpdatedAt: z.string().optional(),
 });

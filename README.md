@@ -285,7 +285,7 @@ All media types (image/voice/file/video) are transferred via CDN using AES-128-E
 ## Uninstall
 
 ```bash
-openclaw openclaw-weixin uninstall
+openclaw plugins uninstall @tencent-weixin/openclaw-weixin
 ```
 
 ## Troubleshooting

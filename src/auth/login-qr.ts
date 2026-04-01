@@ -19,7 +19,7 @@ type ActiveLogin = {
 
 const ACTIVE_LOGIN_TTL_MS = 5 * 60_000;
 /** Client-side timeout for the get_bot_qrcode request. */
-const GET_QRCODE_TIMEOUT_MS = 5_000;
+const GET_QRCODE_TIMEOUT_MS = 10_000;
 /** Client-side timeout for the long-poll get_qrcode_status request. */
 const QR_LONG_POLL_TIMEOUT_MS = 35_000;
 

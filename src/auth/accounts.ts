@@ -291,28 +291,27 @@ export function loadConfigRouteTag(accountId?: string): string | undefined {
 }
 
 /**
- * Ensure the openclaw-weixin channel section exists in openclaw.json so the gateway
- * recognises it as a configured channel at startup, then trigger a config reload.
+ * Bump `channels.openclaw-weixin.channelConfigUpdatedAt` in openclaw.json on each successful login
+ * so the gateway reloads config from disk (no empty `accounts: {}` placeholder).
  */
 export async function triggerWeixinChannelReload(): Promise<void> {
   try {
     const { loadConfig, writeConfigFile } = await import("openclaw/plugin-sdk/config-runtime");
     const cfg = loadConfig();
     const channels = (cfg.channels ?? {}) as Record<string, unknown>;
-    if (!channels["openclaw-weixin"] || Object.keys(channels["openclaw-weixin"] as Record<string, unknown>).every((k) => k === "enabled")) {
-      const updated: OpenClawConfig = {
-        ...cfg,
-        channels: {
-          ...channels,
-          "openclaw-weixin": {
-            ...(channels["openclaw-weixin"] as Record<string, unknown> ?? {}),
-            accounts: {},
-          },
+    const existing = (channels["openclaw-weixin"] as Record<string, unknown> | undefined) ?? {};
+    const updated: OpenClawConfig = {
+      ...cfg,
+      channels: {
+        ...channels,
+        "openclaw-weixin": {
+          ...existing,
+          channelConfigUpdatedAt: new Date().toISOString(),
         },
-      };
-      await writeConfigFile(updated);
-      logger.info("triggerWeixinChannelReload: wrote channel config to openclaw.json");
-    }
+      },
+    };
+    await writeConfigFile(updated);
+    logger.info("triggerWeixinChannelReload: wrote channel config to openclaw.json");
   } catch (err) {
     logger.warn(`triggerWeixinChannelReload: failed to update config: ${String(err)}`);
   }
@@ -343,6 +342,8 @@ type WeixinAccountConfig = {
 
 type WeixinSectionConfig = WeixinAccountConfig & {
   accounts?: Record<string, WeixinAccountConfig>;
+  /** Written on each successful login; see triggerWeixinChannelReload. */
+  channelConfigUpdatedAt?: string;
 };
 
 /** List accountIds from the index file (written at QR login). */

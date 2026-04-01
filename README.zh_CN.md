@@ -284,7 +284,7 @@ openclaw config set agents.mode per-channel-per-peer
 ## 卸载
 
 ```bash
-openclaw openclaw-weixin uninstall
+openclaw plugins uninstall @tencent-weixin/openclaw-weixin
 ```
 
 ## 故障排查
