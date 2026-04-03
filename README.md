@@ -66,13 +66,11 @@ Each QR code login creates a new account entry, supporting multiple WeChat accou
 
 ## Multi-Account Context Isolation
 
-By default, all channels share the same AI conversation context. To isolate conversation context for each WeChat account:
+By default, DMs can share one session bucket. For **multiple logged-in WeChat accounts**, isolate by account + channel + sender:
 
 ```bash
-openclaw config set agents.mode per-channel-per-peer
+openclaw config set session.dmScope per-account-channel-peer
 ```
-
-This gives each "WeChat account + message sender" combination its own independent AI memory, preventing context cross-talk between accounts.
 
 ## Backend API Protocol
 

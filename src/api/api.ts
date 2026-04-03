@@ -121,14 +121,15 @@ function buildHeaders(opts: { token?: string; body: string }): Record<string, st
 }
 
 /**
- * GET fetch wrapper: send a GET request to a Weixin API endpoint with timeout + abort.
+ * GET fetch wrapper: send a GET request to a Weixin API endpoint.
+ * When `timeoutMs` is set, the request is aborted after that many milliseconds.
  * Query parameters should already be encoded in `endpoint`.
- * Returns the raw response text on success; throws on HTTP error or timeout.
+ * Returns the raw response text on success; throws on HTTP error or (if used) timeout abort.
  */
 export async function apiGetFetch(params: {
   baseUrl: string;
   endpoint: string;
-  timeoutMs: number;
+  timeoutMs?: number;
   label: string;
 }): Promise<string> {
   const base = ensureTrailingSlash(params.baseUrl);
@@ -136,15 +137,20 @@ export async function apiGetFetch(params: {
   const hdrs = buildCommonHeaders();
   logger.debug(`GET ${redactUrl(url.toString())}`);
 
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), params.timeoutMs);
+  const timeoutMs = params.timeoutMs;
+  const controller =
+    timeoutMs != null && timeoutMs > 0 ? new AbortController() : undefined;
+  const t =
+    controller != null && timeoutMs != null
+      ? setTimeout(() => controller.abort(), timeoutMs)
+      : undefined;
   try {
     const res = await fetch(url.toString(), {
       method: "GET",
       headers: hdrs,
-      signal: controller.signal,
+      ...(controller ? { signal: controller.signal } : {}),
     });
-    clearTimeout(t);
+    if (t !== undefined) clearTimeout(t);
     const rawText = await res.text();
     logger.debug(`${params.label} status=${res.status} raw=${redactBody(rawText)}`);
     if (!res.ok) {
@@ -152,7 +158,7 @@ export async function apiGetFetch(params: {
     }
     return rawText;
   } catch (err) {
-    clearTimeout(t);
+    if (t !== undefined) clearTimeout(t);
     throw err;
   }
 }

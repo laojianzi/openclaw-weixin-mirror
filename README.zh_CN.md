@@ -65,13 +65,11 @@ openclaw channels login --channel openclaw-weixin
 
 ## 多账号上下文隔离
 
-默认情况下，所有渠道的 AI 会话共享同一个上下文。如果希望每个微信账号的对话上下文相互隔离：
+默认情况下，私聊可能共用同一会话桶。**多个微信号同时登录**时，建议按「账号 + 渠道 + 对端」隔离：
 
 ```bash
-openclaw config set agents.mode per-channel-per-peer
+openclaw config set session.dmScope per-account-channel-peer
 ```
-
-这样每个「微信账号 + 发消息用户」组合都会拥有独立的 AI 记忆，账号之间不会串台。
 
 ## 后端 API 协议
 
