@@ -2,6 +2,8 @@
 > **This repository is now archived**
 > As the official repository [Tencent/openclaw-weixin](https://github.com/Tencent/openclaw-weixin) is now open-sourced, this mirror is no longer maintained. Please visit the official repository for the latest code and support.
 
+[中文文档](README_CN.md)
+
 # openclaw-weixin Mirror
 
 This repository is an unofficial mirror of the npm package [`@tencent-weixin/openclaw-weixin`](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin). It is synchronized daily at 03:00 (UTC+8) via GitHub Actions to ensure the mirror stays up-to-date with the latest npm releases.
